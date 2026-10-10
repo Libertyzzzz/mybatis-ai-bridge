@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.entity.User">
+        <id column="id" property="id"/>
+        <result column="user_name" property="userName"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <resultMap id="UserWithDeptMap" type="com.example.entity.User" extends="BaseResultMap">
+        <association property="dept" javaType="com.example.entity.Dept">
+            <id column="dept_id" property="id"/>
+            <result column="dept_name" property="name"/>
+        </association>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_name, status, dept_id, created_at
+    </sql>
+
+    <!-- list users -->
+    <select id="findUsers" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_user
+        <where>
+            <if test="name != null and name != ''">
+                AND user_name LIKE CONCAT('%', #{name}, '%')  -- fuzzy match
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        <include refid="com.example.mapper.CommonMapper.pageLimit"/>
+    </select>
+
+    <select id="selectWithDept" resultMap="UserWithDeptMap">
+        SELECT u.*, d.name AS dept_name
+        FROM t_user u LEFT JOIN t_dept d ON u.dept_id = d.id
+        WHERE u.id = #{id} AND u.status <![CDATA[ < ]]> 9
+    </select>
+
+    <insert id="batchInsert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_user (user_name, status) VALUES
+        <foreach collection="list" item="u" separator=",">
+            (#{u.userName}, #{u.status})
+        </foreach>
+    </insert>
+
+    <delete id="legacyCleanup">
+        DELETE FROM t_user WHERE status = -1
+    </delete>
+</mapper>

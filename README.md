@@ -13,10 +13,12 @@
 </p>
 
 <p align="center">
-  <a href="#-why-mybatis-ai-bridge"><b>English</b></a> · <a href="#-为什么需要它-why-mybatis-ai-bridge"><b>简体中文</b></a>
+  <a href="#english"><b>English</b></a> · <a href="#zh-cn"><b>简体中文</b></a>
 </p>
 
 ---
+
+<a id="english"></a>
 
 ## 💡 Why `mybatis-ai-bridge`?
 
@@ -188,6 +190,8 @@ java -jar mybatis-ai-bridge.jar --check .
 
 ---
 ---
+
+<a id="zh-cn"></a>
 
 # 简体中文说明
 

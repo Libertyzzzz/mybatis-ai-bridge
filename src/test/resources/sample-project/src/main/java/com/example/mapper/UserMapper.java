@@ -31,4 +31,9 @@ public interface UserMapper extends BaseMapper<User> {
     default boolean exists(Long id) {
         return selectById(id) != null;
     }
+
+    /** Overloaded default helper that delegates to findUsers. */
+    default List<User> findUsers(String name) {
+        return findUsers(name, null);
+    }
 }

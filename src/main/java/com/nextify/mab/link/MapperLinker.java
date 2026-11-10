@@ -76,8 +76,13 @@ public final class MapperLinker {
         Set<String> used = new HashSet<>();
         if (iface != null) {
             for (MapperMethod m : iface.getMethods()) {
-                SqlStatement st = statements.get(m.getName());
                 String loc = simple + "." + m.getName();
+                if (m.isDefaultMethod() && m.getAnnotation() == null) {
+                    entries.add(new BoundStatement(m.getName(), m.getSignature(), m.getDoc(),
+                            null, null, null, Source.DEFAULT_METHOD));
+                    continue;
+                }
+                SqlStatement st = statements.get(m.getName());
                 if (st != null) {
                     used.add(m.getName());
                     if (m.getAnnotation() != null) {
@@ -91,9 +96,6 @@ public final class MapperLinker {
                     entries.add(new BoundStatement(m.getName(), m.getSignature(), m.getDoc(), m.getAnnotationKind(),
                             null, provider ? m.getAnnotationSql() : annotationSql(m.getAnnotationSql(), ns),
                             provider ? Source.PROVIDER : Source.ANNOTATION));
-                } else if (m.isDefaultMethod()) {
-                    entries.add(new BoundStatement(m.getName(), m.getSignature(), m.getDoc(),
-                            null, null, null, Source.DEFAULT_METHOD));
                 } else {
                     entries.add(new BoundStatement(m.getName(), m.getSignature(), m.getDoc(),
                             null, null, null, Source.UNBOUND));

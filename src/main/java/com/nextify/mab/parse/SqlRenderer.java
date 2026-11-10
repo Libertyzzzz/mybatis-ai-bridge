@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 public final class SqlRenderer {
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
-    private static final Pattern LINE_COMMENT = Pattern.compile("--[^\\r\\n]*");
     /** Block comments, but keep optimizer hints such as {@code /*+ INDEX(t idx) *}{@code /}. */
     private static final Pattern BLOCK_COMMENT = Pattern.compile("/\\*(?!\\+).*?\\*/", Pattern.DOTALL);
     private static final int INLINE_LIMIT = 120;
@@ -32,11 +31,46 @@ public final class SqlRenderer {
         this.inlineIncludes = inlineIncludes;
     }
 
-    /** Strips SQL comments and collapses whitespace. */
+    /** Strips SQL comments and collapses whitespace, preserving string literals and optimizer hints. */
     public static String normalize(CharSequence text) {
         String s = BLOCK_COMMENT.matcher(text).replaceAll(" ");
-        s = LINE_COMMENT.matcher(s).replaceAll(" ");
+        s = stripLineComments(s);
         return WHITESPACE.matcher(s).replaceAll(" ").trim();
+    }
+
+    private static String stripLineComments(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        boolean inString = false;
+        int len = text.length();
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
+            if (c == '\'') {
+                sb.append('\'');
+                if (inString) {
+                    if (i + 1 < len && text.charAt(i + 1) == '\'') {
+                        // Escaped quote in SQL ('')
+                        sb.append('\'');
+                        i++;
+                    } else {
+                        inString = false;
+                    }
+                } else {
+                    inString = true;
+                }
+            } else if (!inString && c == '-' && i + 1 < len && text.charAt(i + 1) == '-') {
+                // Line comment: skip until newline or end of text
+                while (i < len && text.charAt(i) != '\r' && text.charAt(i) != '\n') {
+                    i++;
+                }
+                sb.append(' ');
+                if (i < len) {
+                    sb.append(text.charAt(i));
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     String render(Element statement, String namespace) {

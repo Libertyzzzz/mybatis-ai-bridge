@@ -91,6 +91,28 @@ class BridgeTest {
         BoundStatement orphan = entry("UserMapper", "legacyCleanup");
         assertEquals(Source.ORPHAN, orphan.getSource());
         assertNull(orphan.getSignature());
+
+        // Verify overloaded default method is categorized as DEFAULT_METHOD, not XML
+        MapperUnit userMapper = null;
+        for (MapperUnit u : result.getUnits()) {
+            if ("UserMapper".equals(u.getSimpleName())) {
+                userMapper = u;
+                break;
+            }
+        }
+        int findUsersCount = 0;
+        int defaultOverloadCount = 0;
+        for (BoundStatement e : userMapper.getEntries()) {
+            if ("findUsers".equals(e.getName())) {
+                if (e.getSource() == Source.XML) {
+                    findUsersCount++;
+                } else if (e.getSource() == Source.DEFAULT_METHOD) {
+                    defaultOverloadCount++;
+                }
+            }
+        }
+        assertEquals(1, findUsersCount);
+        assertEquals(1, defaultOverloadCount);
     }
 
     @Test
@@ -142,6 +164,13 @@ class BridgeTest {
             }
         }
         throw new AssertionError("findUsers not found");
+    }
+
+    @Test
+    void normalizesSqlPreservingStringsWithDashes() {
+        String sql = "SELECT * FROM t_user WHERE code = '--' AND flag = 'a--b''c' -- this is comment\nAND 1=1";
+        String normalized = com.nextify.mab.parse.SqlRenderer.normalize(sql);
+        assertEquals("SELECT * FROM t_user WHERE code = '--' AND flag = 'a--b''c' AND 1=1", normalized);
     }
 
     private static BoundStatement entry(String mapper, String name) {
